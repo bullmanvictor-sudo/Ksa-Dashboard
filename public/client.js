@@ -111,3 +111,6 @@ function toggleActive() {
 setInterval(() => {
   if (usernameInput && usernameInput.value) socket.emit("heartbeat", usernameInput.value);
 }, 1000);
+// Empty file if all client logic is embedded in HTML
+// Optional: you can move the socket.io code from HTML into this file
+
