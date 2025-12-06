@@ -7,11 +7,25 @@ function formatTime(seconds) {
   return `${h}h ${m}m ${s}s`;
 }
 
+function timeAgo(timestamp) {
+  if (!timestamp) return "-";
+  const diff = Math.floor((Date.now() - timestamp) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 // ================= DASHBOARD =================
 const dashboardBody = document.getElementById("dashboard-body");
 socket.on("status-update", data => {
   if (dashboardBody) {
     dashboardBody.innerHTML = "";
+
+    let maxTime = 0;
+    for (const username in data) if (data[username].activeSeconds > maxTime) maxTime = data[username].activeSeconds;
+    if (maxTime === 0) maxTime = 1;
+
     for (const username in data) {
       const user = data[username];
       const tr = document.createElement("tr");
@@ -20,13 +34,21 @@ socket.on("status-update", data => {
       nameTd.innerText = username;
 
       const statusTd = document.createElement("td");
-      statusTd.innerHTML = user.active ? '<span class="active">Active</span>' : '<span class="inactive">Inactive</span>';
+      statusTd.innerHTML = `<span class="status-badge ${user.active ? "status-active" : "status-inactive"}">
+        ${user.active ? "Active" : "Inactive"}</span>`;
 
       const lastActiveTd = document.createElement("td");
-      lastActiveTd.innerText = user.lastActive ? new Date(user.lastActive).toLocaleTimeString() : "-";
+      lastActiveTd.innerText = timeAgo(user.lastActive);
 
       const totalTimeTd = document.createElement("td");
-      totalTimeTd.innerText = formatTime(user.activeSeconds);
+      const container = document.createElement("div");
+      container.className = "time-bar-container";
+      const bar = document.createElement("div");
+      bar.className = "time-bar";
+      bar.style.width = `${Math.min(100, (user.activeSeconds / maxTime) * 100)}%`;
+      bar.innerText = formatTime(user.activeSeconds);
+      container.appendChild(bar);
+      totalTimeTd.appendChild(container);
 
       const dailyLoginsTd = document.createElement("td");
       dailyLoginsTd.innerText = user.dailyLogins;
@@ -36,7 +58,7 @@ socket.on("status-update", data => {
     }
   }
 
-  // Update other active count on user page
+  // Update user page active count
   const usernameInput = document.getElementById("username");
   const activeCount = document.getElementById("active-count");
   if (usernameInput && activeCount) {
