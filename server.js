@@ -24,23 +24,18 @@ const users = {
   "newbie": { password: "g6Z#x3T&pL0" }
 };
 
-// ================= LOAD / SAVE DATA =================
+// ================= LOAD / SAVE =================
 let statusData = {};
 if (fs.existsSync(DATA_FILE)) {
   try {
     statusData = JSON.parse(fs.readFileSync(DATA_FILE));
   } catch (err) {
-    console.error("Failed to parse data.json, initializing empty statusData");
+    console.error("Failed to parse data.json");
   }
 }
 Object.keys(users).forEach(username => {
   if (!statusData[username]) {
-    statusData[username] = {
-      active: false,
-      lastActive: null,
-      activeSeconds: 0,
-      dailyLogins: 0
-    };
+    statusData[username] = { active: false, lastActive: null, activeSeconds: 0, dailyLogins: 0 };
   }
 });
 
@@ -67,7 +62,6 @@ io.on("connection", socket => {
 
     statusData[username].dailyLogins++;
     saveData();
-
     socket.emit("login-result", { success: true, username, status: statusData[username] });
     io.emit("status-update", statusData);
   });
@@ -91,6 +85,6 @@ io.on("connection", socket => {
   });
 });
 
-// ================= SERVER PORT =================
+// ================= SERVER =================
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, "0.0.0.0", () => console.log("Server running on port", PORT));
