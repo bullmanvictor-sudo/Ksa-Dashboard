@@ -14,4 +14,4 @@ app = "ksa-dashboard"
     port = 443
 
 [machines]
-  size = "shared-cpu-1x"  # smallest allowed free/shared size
+  size = "shared-1x"  # small CPU, free-tier compatible
