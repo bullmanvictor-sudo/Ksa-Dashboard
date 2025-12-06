@@ -1,5 +1,5 @@
 {
-  "name": "Selmy dashboard",
+  "name": "presence-dashboard",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
