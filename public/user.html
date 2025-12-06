@@ -1,28 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
   <title>User Page</title>
   <link rel="stylesheet" href="/style.css">
-</head>
-<body>
-  <main>
-    <h2 id="username">Please log in</h2>
-
-    <div id="loginPanel">
-      <input id="pass" type="password" placeholder="Enter password" />
-      <button id="loginBtn">Login</button>
-    </div>
-
-    <div id="panel" style="display:none;">
-      <button id="toggleBtn">Go Active</button>
-      <p>Status: <span id="statusText">Inactive</span></p>
-      <p>Active time today: <span id="activeTime">0s</span></p>
-      <p>Last active: <span id="lastActive">—</span></p>
-    </div>
-  </main>
-
   <script src="/socket.io/socket.io.js"></script>
   <script src="/client.js"></script>
+</head>
+<body>
+  <h1>User Page</h1>
+
+  <div>
+    <label>Slug (from URL): </label>
+    <input type="text" id="slug" readonly>
+  </div>
+
+  <div>
+    <label>Password: </label>
+    <input type="password" id="password">
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div>
+    <button id="toggle-btn" onclick="toggleActive(false)" disabled>Set Inactive</button>
+    <button onclick="toggleActive(true)" id="active-btn" disabled>Set Active</button>
+  </div>
+
+  <div id="login-result"></div>
+
+  <script>
+    const slugInput = document.getElementById("slug");
+    const passwordInput = document.getElementById("password");
+    const loginResult = document.getElementById("login-result");
+    const toggleBtn = document.getElementById("toggle-btn");
+    const activeBtn = document.getElementById("active-btn");
+
+    // Get slug from URL
+    const pathParts = window.location.pathname.split("/");
+    slugInput.value = pathParts[pathParts.length - 1];
+
+    function login() {
+      const slug = slugInput.value;
+      const password = passwordInput.value;
+      socket.emit("login-user", { slug, password });
+    }
+
+    socket.on("login-result", data => {
+      if (data.success) {
+        loginResult.innerText = `Welcome ${data.name}`;
+        toggleBtn.disabled = false;
+        activeBtn.disabled = false;
+      } else {
+        loginResult.innerText = `Login failed: ${data.msg}`;
+      }
+    });
+
+    function toggleActive(state) {
+      const slug = slugInput.value;
+      socket.emit("toggle-status", { slug, state });
+    }
+  </script>
 </body>
 </html>
