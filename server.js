@@ -87,4 +87,18 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port", PORT);
 });
+  socket.on("heartbeat", slug => {
+    if (!statusData[slug]) return;
+    if (statusData[slug].active) {
+      statusData[slug].activeSeconds += 1;
+      statusData[slug].lastActive = Date.now();
+    }
+  });
+});
+
+// Make sure to listen on the correct port
+const PORT = process.env.PORT || 3000;
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log("Server running on port", PORT);
+});
 
