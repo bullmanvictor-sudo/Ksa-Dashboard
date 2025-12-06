@@ -1,38 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Presence Dashboard</title>
-<link rel="stylesheet" href="/style.css">
-<script src="/socket.io/socket.io.js"></script>
-<script src="/client.js"></script>
-<style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-h1 { text-align: center; color: #333; }
-table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-th, td { padding: 12px; text-align: center; border-bottom: 1px solid #ccc; }
-th { background: #2F4F4F; color: white; }
-tr:hover { background: #f5f5f5; }
-.status-badge { border-radius: 5px; padding: 5px 10px; color: white; font-weight: bold; }
-.status-active { background-color: #28a745; }
-.status-inactive { background-color: #dc3545; }
-.time-bar-container { background: #eee; border-radius: 5px; height: 20px; width: 100%; }
-.time-bar { height: 100%; border-radius: 5px; background: #007bff; text-align: right; color: white; padding-right: 5px; font-size: 12px; line-height: 20px; }
-</style>
+  <meta charset="UTF-8">
+  <title>Presence Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/client.js"></script>
 </head>
 <body>
-<h1>Presence Dashboard</h1>
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Status</th>
-      <th>Last Active</th>
-      <th>Total Active Time</th>
-      <th>Daily Logins</th>
-    </tr>
-  </thead>
-  <tbody id="dashboard-body"></tbody>
-</table>
+  <h1>Presence Dashboard</h1>
+  <table border="1" cellpadding="10">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Status</th>
+        <th>Last Active</th>
+        <th>Total Active Time</th>
+        <th>Daily Logins</th>
+      </tr>
+    </thead>
+    <tbody id="user-table"></tbody>
+  </table>
+
+  <script>
+    const socket = io();
+    const tableBody = document.getElementById("user-table");
+
+    function formatTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${h}h ${m}m ${s}s`;
+    }
+
+    socket.on("status-update", data => {
+      tableBody.innerHTML = "";
+      for (const slug in data) {
+        const user = data[slug];
+        const row = document.createElement("tr");
+
+        const nameCell = document.createElement("td");
+        nameCell.innerText = slug;
+        const statusCell = document.createElement("td");
+        statusCell.innerText = user.active ? "Active" : "Inactive";
+        statusCell.style.color = user.active ? "green" : "red";
+
+        const lastCell = document.createElement("td");
+        lastCell.innerText = user.lastActive ? new Date(user.lastActive).toLocaleTimeString() : "-";
+
+        const activeCell = document.createElement("td");
+        activeCell.innerText = formatTime(user.activeSeconds);
+
+        const loginCell = document.createElement("td");
+        loginCell.innerText = user.dailyLogins;
+
+        row.appendChild(nameCell);
+        row.appendChild(statusCell);
+        row.appendChild(lastCell);
+        row.appendChild(activeCell);
+        row.appendChild(loginCell);
+
+        tableBody.appendChild(row);
+      }
+    });
+  </script>
 </body>
 </html>
