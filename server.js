@@ -8,6 +8,7 @@ const io = new Server(httpServer);
 
 app.use(express.static("public"));
 
+// Users config
 const users = {
   "384927": { name: "Selmy", password: "P$8rVq2xL!a" },
   "590213": { name: "Basmalah", password: "u9F&3bK#tQ1" },
@@ -19,6 +20,7 @@ const users = {
   "483020": { name: "newbie", password: "g6Z#x3T&pL0" }
 };
 
+// In-memory status data
 const statusData = {};
 Object.keys(users).forEach(slug => {
   statusData[slug] = {
@@ -26,10 +28,12 @@ Object.keys(users).forEach(slug => {
     lastUpdate: Date.now(),
     lastActive: null,
     activeSeconds: 0,
-    dailyLogins: 0
+    dailyLogins: 0,
+    activeSessions: 0
   };
 });
 
+// Routes
 app.get("/u/:slug", (req, res) => {
   res.sendFile(process.cwd() + "/public/user.html");
 });
@@ -38,13 +42,19 @@ app.get("/dashboard", (req, res) => {
   res.sendFile(process.cwd() + "/public/dashboard.html");
 });
 
+// Socket.IO
 io.on("connection", socket => {
   socket.emit("status-update", statusData);
 
   socket.on("login-user", ({ slug, password }) => {
-    if (!users[slug]) return socket.emit("login-result", { success: false, msg: "Invalid URL" });
-    if (users[slug].password !== password) return socket.emit("login-result", { success: false, msg: "Wrong password" });
-    
+    if (!users[slug]) {
+      socket.emit("login-result", { success: false, msg: "Invalid URL" });
+      return;
+    }
+    if (users[slug].password !== password) {
+      socket.emit("login-result", { success: false, msg: "Wrong password" });
+      return;
+    }
     statusData[slug].dailyLogins++;
     statusData[slug].lastUpdate = Date.now();
     socket.emit("login-result", { success: true, name: users[slug].name });
@@ -55,7 +65,10 @@ io.on("connection", socket => {
     if (!statusData[slug]) return;
     statusData[slug].active = !!state;
     statusData[slug].lastUpdate = Date.now();
-    if (state) statusData[slug].lastActive = Date.now();
+    if (state) {
+      statusData[slug].lastActive = Date.now();
+      statusData[slug].activeSessions++;
+    }
     io.emit("status-update", statusData);
   });
 
@@ -63,11 +76,12 @@ io.on("connection", socket => {
     if (!statusData[slug]) return;
     if (statusData[slug].active) {
       statusData[slug].activeSeconds += 1;
-      statusData[slug].lastActive = Date.now();
+      // lastActive is NOT updated here, only on toggle to active
     }
   });
 });
 
+// Start server
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port", PORT);
