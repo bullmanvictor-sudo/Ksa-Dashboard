@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>User Page</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <h2 id="username">Please log in</h2>
+
+    <div id="loginPanel">
+      <input id="pass" type="password" placeholder="Enter password" />
+      <button id="loginBtn">Login</button>
+    </div>
+
+    <div id="panel" style="display:none;">
+      <button id="toggleBtn">Go Active</button>
+      <p>Status: <span id="statusText">Inactive</span></p>
+      <p>Active time today: <span id="activeTime">0s</span></p>
+      <p>Last active: <span id="lastActive">—</span></p>
+    </div>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/client.js"></script>
+</body>
+</html>
