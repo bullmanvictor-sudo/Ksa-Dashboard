@@ -5,25 +5,14 @@
   <title>User Page</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/client.js"></script>
   <style>
-    #toggle-btn {
-      padding: 10px 20px;
-      color: white;
-      border: none;
-      cursor: pointer;
-      margin-top: 10px;
-    }
+    #toggle-btn { padding: 10px 20px; color: white; border: none; cursor: pointer; margin-top: 10px; }
   </style>
 </head>
 <body>
   <h1>User Page</h1>
 
   <div id="login-form">
-    <div>
-      <label>Name / Slug: </label>
-      <input type="text" id="slug">
-    </div>
     <div>
       <label>Password: </label>
       <input type="password" id="password">
@@ -37,19 +26,17 @@
 
   <script>
     const socket = io();
-    const slugInput = document.getElementById("slug");
     const passwordInput = document.getElementById("password");
     const loginResult = document.getElementById("login-result");
     const toggleBtn = document.getElementById("toggle-btn");
     const loginForm = document.getElementById("login-form");
     const activeCount = document.getElementById("active-count");
 
-    // Extract slug from URL
     const pathParts = window.location.pathname.split("/");
-    slugInput.value = pathParts[pathParts.length - 1];
+    const id = pathParts[pathParts.length - 1];
 
     function login() {
-      socket.emit("login-user", { slug: slugInput.value, password: passwordInput.value });
+      socket.emit("login-user", { id, password: passwordInput.value });
     }
 
     socket.on("login-result", data => {
@@ -65,27 +52,25 @@
 
     function toggleActive() {
       const newState = toggleBtn.innerText === "Inactive";
-      socket.emit("toggle-status", { slug: slugInput.value, state: newState });
+      socket.emit("toggle-status", { id, state: newState });
       toggleBtn.style.backgroundColor = newState ? "green" : "red";
       toggleBtn.innerText = newState ? "Active" : "Inactive";
     }
 
     socket.on("status-update", data => {
-      if (!slugInput.value) return;
       let count = 0;
-      for (const s in data) if (data[s].active) count++;
-      if (data[slugInput.value]?.active) count--;
+      for (const key in data) if (data[key].active) count++;
+      if (data[id]?.active) count--;
       activeCount.innerText = `Other active users: ${count}`;
 
-      // Preserve toggle state
-      if (data[slugInput.value]) {
-        const state = data[slugInput.value].active;
+      if (data[id]) {
+        const state = data[id].active;
         toggleBtn.style.backgroundColor = state ? "green" : "red";
         toggleBtn.innerText = state ? "Active" : "Inactive";
       }
     });
 
-    setInterval(() => { if (slugInput.value) socket.emit("heartbeat", slugInput.value); }, 1000);
+    setInterval(() => { socket.emit("heartbeat", id); }, 5000);
   </script>
 </body>
 </html>
