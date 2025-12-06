@@ -6,39 +6,51 @@
   <link rel="stylesheet" href="/style.css">
   <script src="/socket.io/socket.io.js"></script>
   <script src="/client.js"></script>
+  <style>
+    #toggle-btn {
+      padding: 10px 20px;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
   <h1>User Page</h1>
 
-  <div>
-    <label>Slug (from URL): </label>
-    <input type="text" id="slug" readonly>
+  <!-- Login form -->
+  <div id="login-form">
+    <div>
+      <label>Name / Slug: </label>
+      <input type="text" id="slug">
+    </div>
+
+    <div>
+      <label>Password: </label>
+      <input type="password" id="password">
+      <button onclick="login()">Login</button>
+    </div>
   </div>
 
-  <div>
-    <label>Password: </label>
-    <input type="password" id="password">
-    <button onclick="login()">Login</button>
-  </div>
+  <!-- Login result message -->
+  <div id="login-result" style="margin-top:10px;"></div>
 
-  <div>
-    <button id="toggle-btn" onclick="toggleActive(false)" disabled>Set Inactive</button>
-    <button onclick="toggleActive(true)" id="active-btn" disabled>Set Active</button>
-  </div>
+  <!-- Toggle active/inactive button -->
+  <button id="toggle-btn" onclick="toggleActive()" disabled>Inactive</button>
 
-  <div id="login-result"></div>
+  <!-- Other active users count -->
+  <div id="active-count" style="margin-top:10px;">Other active users: 0</div>
 
   <script>
     const slugInput = document.getElementById("slug");
     const passwordInput = document.getElementById("password");
     const loginResult = document.getElementById("login-result");
     const toggleBtn = document.getElementById("toggle-btn");
-    const activeBtn = document.getElementById("active-btn");
+    const loginForm = document.getElementById("login-form");
+    const activeCount = document.getElementById("active-count");
 
-    // Get slug from URL
-    const pathParts = window.location.pathname.split("/");
-    slugInput.value = pathParts[pathParts.length - 1];
-
+    // LOGIN FUNCTION
     function login() {
       const slug = slugInput.value;
       const password = passwordInput.value;
@@ -48,17 +60,47 @@
     socket.on("login-result", data => {
       if (data.success) {
         loginResult.innerText = `Welcome ${data.name}`;
-        toggleBtn.disabled = false;
-        activeBtn.disabled = false;
+        loginForm.style.display = "none";        // Hide login inputs
+        toggleBtn.disabled = false;              // Enable toggle button
+        toggleBtn.style.backgroundColor = "red"; // Start as inactive
+        toggleBtn.innerText = "Inactive";
       } else {
         loginResult.innerText = `Login failed: ${data.msg}`;
       }
     });
 
-    function toggleActive(state) {
+    // TOGGLE ACTIVE/INACTIVE BUTTON
+    function toggleActive() {
       const slug = slugInput.value;
-      socket.emit("toggle-status", { slug, state });
+      const newState = toggleBtn.innerText === "Inactive";
+      socket.emit("toggle-status", { slug, state: newState });
+
+      // Update button color and text
+      if (newState) {
+        toggleBtn.style.backgroundColor = "green";
+        toggleBtn.innerText = "Active";
+      } else {
+        toggleBtn.style.backgroundColor = "red";
+        toggleBtn.innerText = "Inactive";
+      }
     }
+
+    // UPDATE OTHER ACTIVE USERS COUNT
+    socket.on("status-update", data => {
+      if (!slugInput.value) return;
+      let activeUsers = 0;
+      for (const slug in data) {
+        if (data[slug].active) activeUsers++;
+      }
+      // Exclude self
+      if (data[slugInput.value]?.active) activeUsers--;
+      activeCount.innerText = `Other active users: ${activeUsers}`;
+    });
+
+    // HEARTBEAT
+    setInterval(() => {
+      if (slugInput.value) socket.emit("heartbeat", slugInput.value);
+    }, 1000);
   </script>
 </body>
 </html>
