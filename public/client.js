@@ -90,3 +90,38 @@ setInterval(() => {
     socket.emit("heartbeat", slugInput.value);
   }
 }, 1000);
+// DASHBOARD REAL-TIME UPDATE
+const dashboardBody = document.getElementById("dashboard-body");
+
+socket.on("status-update", data => {
+  if (!dashboardBody) return;
+  dashboardBody.innerHTML = ""; // Clear table
+
+  for (const slug in data) {
+    const user = data[slug];
+    const tr = document.createElement("tr");
+
+    const nameTd = document.createElement("td");
+    nameTd.innerText = usersNames[slug] || slug;
+
+    const statusTd = document.createElement("td");
+    statusTd.innerHTML = user.active ? '<span class="active">Active</span>' : '<span class="inactive">Inactive</span>';
+
+    const lastActiveTd = document.createElement("td");
+    lastActiveTd.innerText = user.lastActive ? new Date(user.lastActive).toLocaleTimeString() : "-";
+
+    const totalTimeTd = document.createElement("td");
+    totalTimeTd.innerText = formatTime(user.activeSeconds || 0);
+
+    const dailyLoginsTd = document.createElement("td");
+    dailyLoginsTd.innerText = user.dailyLogins || 0;
+
+    tr.appendChild(nameTd);
+    tr.appendChild(statusTd);
+    tr.appendChild(lastActiveTd);
+    tr.appendChild(totalTimeTd);
+    tr.appendChild(dailyLoginsTd);
+
+    dashboardBody.appendChild(tr);
+  }
+});
