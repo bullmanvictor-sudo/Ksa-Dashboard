@@ -1,12 +1,16 @@
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import fs from "fs";
+import path from "path";
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
 app.use(express.static("public"));
+
+const DATA_FILE = path.join(process.cwd(), "data.json");
 
 // ================= USERS =================
 const users = {
@@ -20,26 +24,33 @@ const users = {
   "newbie": { password: "g6Z#x3T&pL0" }
 };
 
-// ================= STATUS DATA =================
-const statusData = {};
+// ================= LOAD / SAVE DATA =================
+let statusData = {};
+if (fs.existsSync(DATA_FILE)) {
+  try {
+    statusData = JSON.parse(fs.readFileSync(DATA_FILE));
+  } catch (err) {
+    console.error("Failed to parse data.json, initializing empty statusData");
+  }
+}
 Object.keys(users).forEach(username => {
-  statusData[username] = {
-    active: false,
-    lastActive: null,
-    activeSeconds: 0,
-    dailyLogins: 0
-  };
+  if (!statusData[username]) {
+    statusData[username] = {
+      active: false,
+      lastActive: null,
+      activeSeconds: 0,
+      dailyLogins: 0
+    };
+  }
 });
+
+function saveData() {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(statusData, null, 2));
+}
 
 // ================= ROUTES =================
-app.get("/", (req, res) => {
-  res.sendFile(process.cwd() + "/public/dashboard.html");
-});
-
-app.get("/dashboard", (req, res) => {
-  res.sendFile(process.cwd() + "/public/dashboard.html");
-});
-
+app.get("/", (req, res) => res.sendFile(process.cwd() + "/public/dashboard.html"));
+app.get("/dashboard", (req, res) => res.sendFile(process.cwd() + "/public/dashboard.html"));
 app.get("/u/:username", (req, res) => {
   const username = req.params.username;
   if (!users[username]) return res.status(404).send("User not found");
@@ -48,37 +59,33 @@ app.get("/u/:username", (req, res) => {
 
 // ================= SOCKET.IO =================
 io.on("connection", socket => {
-
-  // Send current status on connection
   socket.emit("status-update", statusData);
 
-  // Handle login
   socket.on("login-user", ({ username, password }) => {
     if (!users[username]) return socket.emit("login-result", { success: false, msg: "Invalid username" });
     if (users[username].password !== password) return socket.emit("login-result", { success: false, msg: "Wrong password" });
 
-    // Login successful
     statusData[username].dailyLogins++;
-    socket.emit("login-result", { success: true, username, status: statusData[username] });
+    saveData();
 
-    // Broadcast updated status
+    socket.emit("login-result", { success: true, username, status: statusData[username] });
     io.emit("status-update", statusData);
   });
 
-  // Toggle active/inactive
   socket.on("toggle-status", ({ username, state }) => {
     if (!statusData[username]) return;
     statusData[username].active = state;
     if (state) statusData[username].lastActive = Date.now();
+    saveData();
     io.emit("status-update", statusData);
   });
 
-  // Heartbeat for active time
   socket.on("heartbeat", username => {
     if (!statusData[username]) return;
     if (statusData[username].active) {
       statusData[username].activeSeconds++;
       statusData[username].lastActive = Date.now();
+      saveData();
       io.emit("status-update", statusData);
     }
   });
