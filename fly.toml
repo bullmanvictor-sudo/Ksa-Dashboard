@@ -1,11 +1,16 @@
 app = "ksa-dashboard"
 
+# Services define how Fly.io routes traffic to your app
 [[services]]
   internal_port = 3000
   protocol = "tcp"
 
+  # HTTP port (80)
   [[services.ports]]
     port = 80
+    handlers = ["http"]
 
+  # HTTPS port (443)
   [[services.ports]]
     port = 443
+    handlers = ["tls", "http"]
