@@ -6,85 +6,84 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
-// =================== USERS CONFIG ===================
+app.use(express.static("public"));
+
+// ================= USERS =================
 const users = {
-  "384927": { name: "Selmy", password: "P$8rVq2xL!a" },
-  "590213": { name: "Basmalah", password: "u9F&3bK#tQ1" },
-  "718405": { name: "Eman", password: "Zp7@vR5mS2y" },
-  "062491": { name: "Maya", password: "xE4$k9N!pT8" },
-  "246801": { name: "Rana", password: "M#6tQ2zY7uV" },
-  "975310": { name: "Yara", password: "s8W&1pL#cF4" },
-  "130579": { name: "Youssef", password: "B2!rN7qH$k9" },
-  "483020": { name: "newbie", password: "g6Z#x3T&pL0" }
+  "selmy": { password: "P$8rVq2xL!a" },
+  "basmalah": { password: "u9F&3bK#tQ1" },
+  "eman": { password: "Zp7@vR5mS2y" },
+  "maya": { password: "xE4$k9N!pT8" },
+  "rana": { password: "M#6tQ2zY7uV" },
+  "yara": { password: "s8W&1pL#cF4" },
+  "youssef": { password: "B2!rN7qH$k9" },
+  "newbie": { password: "g6Z#x3T&pL0" }
 };
 
-// =================== IN-MEMORY STATUS DATA ===================
+// ================= STATUS DATA =================
 const statusData = {};
-Object.keys(users).forEach(slug => {
-  statusData[slug] = {
+Object.keys(users).forEach(username => {
+  statusData[username] = {
     active: false,
     lastActive: null,
-    lastUpdate: Date.now(),
     activeSeconds: 0,
     dailyLogins: 0
   };
 });
 
-// =================== ROUTES ===================
-app.use(express.static("public"));
-
-// Dashboard
+// ================= ROUTES =================
 app.get("/", (req, res) => {
   res.sendFile(process.cwd() + "/public/dashboard.html");
 });
+
 app.get("/dashboard", (req, res) => {
   res.sendFile(process.cwd() + "/public/dashboard.html");
 });
 
-// User page
-app.get("/u/:slug", (req, res) => {
+app.get("/u/:username", (req, res) => {
+  const username = req.params.username;
+  if (!users[username]) return res.status(404).send("User not found");
   res.sendFile(process.cwd() + "/public/user.html");
 });
 
-// =================== SOCKET.IO ===================
+// ================= SOCKET.IO =================
 io.on("connection", socket => {
-  // Send current status data immediately
+
+  // Send current status on connection
   socket.emit("status-update", statusData);
 
   // Handle login
-  socket.on("login-user", ({ slug, password }) => {
-    if (!users[slug]) return socket.emit("login-result", { success: false, msg: "Invalid URL" });
-    if (users[slug].password !== password) return socket.emit("login-result", { success: false, msg: "Wrong password" });
+  socket.on("login-user", ({ username, password }) => {
+    if (!users[username]) return socket.emit("login-result", { success: false, msg: "Invalid username" });
+    if (users[username].password !== password) return socket.emit("login-result", { success: false, msg: "Wrong password" });
 
-    statusData[slug].dailyLogins++;
-    statusData[slug].lastUpdate = Date.now();
-    socket.emit("login-result", { success: true, name: users[slug].name, status: statusData[slug] });
+    // Login successful
+    statusData[username].dailyLogins++;
+    socket.emit("login-result", { success: true, username, status: statusData[username] });
 
+    // Broadcast updated status
     io.emit("status-update", statusData);
   });
 
-  // Handle toggle status
-  socket.on("toggle-status", ({ slug, state }) => {
-    if (!statusData[slug]) return;
-    statusData[slug].active = state;
-    statusData[slug].lastUpdate = Date.now();
-    if (state) statusData[slug].lastActive = Date.now();
+  // Toggle active/inactive
+  socket.on("toggle-status", ({ username, state }) => {
+    if (!statusData[username]) return;
+    statusData[username].active = state;
+    if (state) statusData[username].lastActive = Date.now();
     io.emit("status-update", statusData);
   });
 
   // Heartbeat for active time
-  socket.on("heartbeat", slug => {
-    if (!statusData[slug]) return;
-    if (statusData[slug].active) {
-      statusData[slug].activeSeconds += 1;
-      statusData[slug].lastActive = Date.now();
+  socket.on("heartbeat", username => {
+    if (!statusData[username]) return;
+    if (statusData[username].active) {
+      statusData[username].activeSeconds++;
+      statusData[username].lastActive = Date.now();
       io.emit("status-update", statusData);
     }
   });
 });
 
-// =================== SERVER PORT ===================
+// ================= SERVER PORT =================
 const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log("Server running on port", PORT);
-});
+httpServer.listen(PORT, "0.0.0.0", () => console.log("Server running on port", PORT));
