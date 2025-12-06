@@ -1,116 +1,92 @@
 const socket = io();
 
-function formatTime(seconds) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  return `${h}h ${m}m ${s}s`;
+// ---------------- HELPERS ----------------
+function secondsToHMS(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  return `${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
 }
 
-function timeAgo(timestamp) {
-  if (!timestamp) return "-";
-  const diff = Math.floor((Date.now() - timestamp) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
+// ---------------- DASHBOARD LOGIC ----------------
+if (document.getElementById("dashboard-table")) {
+  const tableBody = document.getElementById("dashboard-body");
+  const totalActive = document.getElementById("total-active");
 
-// ================= DASHBOARD =================
-const dashboardBody = document.getElementById("dashboard-body");
-socket.on("status-update", data => {
-  if (dashboardBody) {
-    dashboardBody.innerHTML = "";
+  socket.on("status-update", data => {
+    tableBody.innerHTML = "";
+    let activeCount = 0;
 
-    let maxTime = 0;
-    for (const username in data) if (data[username].activeSeconds > maxTime) maxTime = data[username].activeSeconds;
-    if (maxTime === 0) maxTime = 1;
+    for (const id in data) {
+      const user = data[id];
+      if (user.active) activeCount++;
 
-    for (const username in data) {
-      const user = data[username];
       const tr = document.createElement("tr");
-
-      const nameTd = document.createElement("td");
-      nameTd.innerText = username;
-
-      const statusTd = document.createElement("td");
-      statusTd.innerHTML = `<span class="status-badge ${user.active ? "status-active" : "status-inactive"}">
-        ${user.active ? "Active" : "Inactive"}</span>`;
-
-      const lastActiveTd = document.createElement("td");
-      lastActiveTd.innerText = timeAgo(user.lastActive);
-
-      const totalTimeTd = document.createElement("td");
-      const container = document.createElement("div");
-      container.className = "time-bar-container";
-      const bar = document.createElement("div");
-      bar.className = "time-bar";
-      bar.style.width = `${Math.min(100, (user.activeSeconds / maxTime) * 100)}%`;
-      bar.innerText = formatTime(user.activeSeconds);
-      container.appendChild(bar);
-      totalTimeTd.appendChild(container);
-
-      const dailyLoginsTd = document.createElement("td");
-      dailyLoginsTd.innerText = user.dailyLogins;
-
-      tr.append(nameTd, statusTd, lastActiveTd, totalTimeTd, dailyLoginsTd);
-      dashboardBody.appendChild(tr);
+      tr.innerHTML = `
+        <td>${user.name}</td>
+        <td style="color:${user.active ? "green" : "red"}">${user.active ? "Active" : "Inactive"}</td>
+        <td>${user.lastActive ? new Date(user.lastActive).toLocaleTimeString() : "-"}</td>
+        <td>${secondsToHMS(user.activeSeconds)}</td>
+        <td>${user.dailyLogins}</td>
+      `;
+      tableBody.appendChild(tr);
     }
-  }
 
-  // Update user page active count
-  const usernameInput = document.getElementById("username");
-  const activeCount = document.getElementById("active-count");
-  if (usernameInput && activeCount) {
-    let count = 0;
-    for (const u in data) if (data[u].active) count++;
-    if (usernameInput.value && data[usernameInput.value]?.active) count--;
-    activeCount.innerText = `Other active users: ${count}`;
-  }
-});
-
-// ================= USER LOGIN =================
-const loginForm = document.getElementById("login-form");
-const toggleBtn = document.getElementById("toggle-btn");
-const loginResult = document.getElementById("login-result");
-const usernameInput = document.getElementById("username");
-const passwordInput = document.getElementById("password");
-
-function login() {
-  const username = usernameInput.value.trim();
-  const password = passwordInput.value;
-  if (!username || !password) return;
-  socket.emit("login-user", { username, password });
+    totalActive.innerText = activeCount;
+  });
 }
 
-socket.on("login-result", data => {
-  if (!loginResult) return;
-  if (data.success) {
-    loginResult.innerText = `Welcome ${data.username}`;
-    if (loginForm) loginForm.style.display = "none";
-    if (toggleBtn) {
+// ---------------- USER LOGIC ----------------
+if (document.getElementById("user-page")) {
+  const slugInput = document.getElementById("slug");
+  const passwordInput = document.getElementById("password");
+  const loginBtn = document.getElementById("login-btn");
+  const toggleBtn = document.getElementById("toggle-btn");
+  const loginForm = document.getElementById("login-form");
+  const activeCountDiv = document.getElementById("active-count");
+  const welcomeDiv = document.getElementById("welcome");
+
+  // Extract ID from URL
+  const pathParts = window.location.pathname.split("/");
+  const id = pathParts[pathParts.length - 1];
+  slugInput.value = id;
+
+  // LOGIN
+  loginBtn.addEventListener("click", () => {
+    socket.emit("login-user", { id, password: passwordInput.value });
+  });
+
+  socket.on("login-result", data => {
+    if (data.success) {
+      loginForm.style.display = "none";
+      welcomeDiv.innerText = `Welcome ${data.name}`;
       toggleBtn.disabled = false;
-      toggleBtn.innerText = data.status.active ? "Active" : "Inactive";
-      toggleBtn.style.backgroundColor = data.status.active ? "green" : "red";
+      toggleBtn.style.backgroundColor = data.active ? "green" : "red";
+      toggleBtn.innerText = data.active ? "Active" : "Inactive";
+    } else {
+      welcomeDiv.innerText = `Login failed: ${data.msg}`;
     }
-  } else {
-    loginResult.innerText = `Login failed: ${data.msg}`;
-  }
-});
+  });
 
-// ================= TOGGLE ACTIVE =================
-function toggleActive() {
-  if (!toggleBtn || !usernameInput) return;
-  const newState = toggleBtn.innerText === "Inactive";
-  socket.emit("toggle-status", { username: usernameInput.value, state: newState });
-  toggleBtn.innerText = newState ? "Active" : "Inactive";
-  toggleBtn.style.backgroundColor = newState ? "green" : "red";
+  // TOGGLE ACTIVE/INACTIVE
+  toggleBtn.addEventListener("click", () => {
+    const newState = toggleBtn.innerText === "Inactive";
+    socket.emit("toggle-status", { id, state: newState });
+    toggleBtn.style.backgroundColor = newState ? "green" : "red";
+    toggleBtn.innerText = newState ? "Active" : "Inactive";
+  });
+
+  // UPDATE OTHER ACTIVE USERS COUNT
+  socket.on("status-update", data => {
+    let activeCount = 0;
+    for (const key in data) {
+      if (key !== id && data[key].active) activeCount++;
+    }
+    activeCountDiv.innerText = `Other active users: ${activeCount}`;
+  });
+
+  // HEARTBEAT every 5 seconds
+  setInterval(() => {
+    socket.emit("heartbeat", id);
+  }, 5000);
 }
-
-// ================= HEARTBEAT =================
-setInterval(() => {
-  if (usernameInput && usernameInput.value) socket.emit("heartbeat", usernameInput.value);
-}, 1000);
-// Empty file if all client logic is embedded in HTML
-// Optional: you can move the socket.io code from HTML into this file
-
