@@ -5,10 +5,10 @@
   <title>Presence Dashboard</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/client.js"></script>
 </head>
 <body>
   <h1>Presence Dashboard</h1>
+  <div id="total-active" style="margin-bottom: 10px;">Total Active Users: 0</div>
   <table border="1" cellpadding="10">
     <thead>
       <tr>
@@ -25,22 +25,21 @@
   <script>
     const socket = io();
     const tableBody = document.getElementById("user-table");
-
-    function formatTime(seconds) {
-      const h = Math.floor(seconds / 3600);
-      const m = Math.floor((seconds % 3600) / 60);
-      const s = seconds % 60;
-      return `${h}h ${m}m ${s}s`;
-    }
+    const totalActiveDiv = document.getElementById("total-active");
 
     socket.on("status-update", data => {
       tableBody.innerHTML = "";
-      for (const slug in data) {
-        const user = data[slug];
+      let activeUsers = 0;
+
+      for (const id in data) {
+        const user = data[id];
+        if (user.active) activeUsers++;
+
         const row = document.createElement("tr");
 
         const nameCell = document.createElement("td");
-        nameCell.innerText = slug;
+        nameCell.innerText = user.name;
+
         const statusCell = document.createElement("td");
         statusCell.innerText = user.active ? "Active" : "Inactive";
         statusCell.style.color = user.active ? "green" : "red";
@@ -49,19 +48,16 @@
         lastCell.innerText = user.lastActive ? new Date(user.lastActive).toLocaleTimeString() : "-";
 
         const activeCell = document.createElement("td");
-        activeCell.innerText = formatTime(user.activeSeconds);
+        activeCell.innerText = user.activeSeconds + "s";
 
         const loginCell = document.createElement("td");
         loginCell.innerText = user.dailyLogins;
 
-        row.appendChild(nameCell);
-        row.appendChild(statusCell);
-        row.appendChild(lastCell);
-        row.appendChild(activeCell);
-        row.appendChild(loginCell);
-
+        row.append(nameCell, statusCell, lastCell, activeCell, loginCell);
         tableBody.appendChild(row);
       }
+
+      totalActiveDiv.innerText = `Total Active Users: ${activeUsers}`;
     });
   </script>
 </body>
