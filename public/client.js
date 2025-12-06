@@ -1,6 +1,6 @@
 const socket = io();
 
-// User slug → name mapping
+// Map slugs to names
 const usersNames = {
   "384927": "Selmy",
   "590213": "Basmalah",
@@ -22,43 +22,28 @@ function formatTime(seconds) {
 
 // =================== DASHBOARD ===================
 socket.on("status-update", data => {
-  // Dashboard rendering
-  const dashboardContainer = document.getElementById("dashboard-users");
-  if (dashboardContainer) {
-    dashboardContainer.innerHTML = "";
-    for (const slug in data) {
-      const user = data[slug];
-      const name = usersNames[slug] || slug;
-      const status = user.active ? "Active" : "Inactive";
-      const color = user.active ? "green" : "red";
-      const lastActive = user.lastActive ? new Date(user.lastActive).toLocaleTimeString() : "Never";
-      const totalTime = formatTime(user.activeSeconds);
-      const sessions = user.activeSessions || 0;
-
-      dashboardContainer.innerHTML += `<div style="color:${color}; margin-bottom:5px;">
-        ${name} (${status}) - Last Active: ${lastActive} - Total Time: ${totalTime} - Active Sessions: ${sessions}
-      </div>`;
-    }
-  }
-
-  // =================== USER PAGE ACTIVE USERS ===================
+  // Update other active users on user page
   const slugInput = document.getElementById("slug");
   const activeCountContainer = document.getElementById("active-count");
+
   if (slugInput && activeCountContainer) {
     const mySlug = slugInput.value;
     let activeUsers = 0;
     for (const slug in data) {
       if (data[slug].active) activeUsers++;
     }
-    if (mySlug && data[mySlug]?.active) activeUsers--; // exclude self
+    // Exclude self
+    if (mySlug && data[mySlug]?.active) activeUsers--;
     activeCountContainer.innerText = `Other active users: ${activeUsers}`;
   }
 });
 
-// =================== USER PAGE LOGIN ===================
+// =================== USER LOGIN ===================
 function login() {
-  const slug = document.getElementById("slug").value;
+  const slug = document.getElementById("slug").value.trim();
   const password = document.getElementById("password").value;
+  if (!slug || !password) return;
+
   socket.emit("login-user", { slug, password });
 }
 
@@ -71,7 +56,7 @@ socket.on("login-result", data => {
 
   if (data.success) {
     loginResult.innerText = `Welcome ${data.name}`;
-    loginForm.style.display = "none";        // Hide login form
+    loginForm.style.display = "none";        // Hide login inputs
     toggleBtn.disabled = false;              // Enable toggle button
     toggleBtn.style.backgroundColor = "red"; // Start as inactive
     toggleBtn.innerText = "Inactive";
@@ -80,7 +65,7 @@ socket.on("login-result", data => {
   }
 });
 
-// =================== USER PAGE TOGGLE ===================
+// =================== TOGGLE ACTIVE / INACTIVE ===================
 function toggleActive() {
   const slugInput = document.getElementById("slug");
   const toggleBtn = document.getElementById("toggle-btn");
