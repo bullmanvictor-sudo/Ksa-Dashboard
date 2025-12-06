@@ -1,6 +1,6 @@
-body { font-family: Arial, sans-serif; }
+body { font-family: Arial, sans-serif; margin:20px; }
 input, button { font-size: 16px; }
-table { border-collapse: collapse; width: 100%; }
+table { border-collapse: collapse; width: 100%; margin-top:20px; }
 th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
 th { background: #f4f4f4; }
 .active { background: green; color: white; border-radius: 4px; padding: 4px 8px; }
