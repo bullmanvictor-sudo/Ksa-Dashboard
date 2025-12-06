@@ -86,3 +86,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port", PORT);
 });
+// Serve dashboard at root URL
+app.get("/", (req, res) => {
+  res.sendFile(process.cwd() + "/public/dashboard.html");
+});
