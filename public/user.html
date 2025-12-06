@@ -1,76 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>User Page</title>
-  <link rel="stylesheet" href="/style.css">
-  <script src="/socket.io/socket.io.js"></script>
-  <style>
-    #toggle-btn { padding: 10px 20px; color: white; border: none; cursor: pointer; margin-top: 10px; }
-  </style>
+<meta charset="UTF-8">
+<title>User Page</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/socket.io/socket.io.js"></script>
+<script src="/client.js"></script>
 </head>
 <body>
-  <h1>User Page</h1>
-
+<h1>User Page</h1>
+<div id="user-page">
   <div id="login-form">
-    <div>
-      <label>Password: </label>
-      <input type="password" id="password">
-      <button onclick="login()">Login</button>
-    </div>
+    <label>Password: </label>
+    <input type="password" id="password">
+    <button id="login-btn">Login</button>
   </div>
-
-  <div id="login-result" style="margin-top:10px;"></div>
-  <button id="toggle-btn" onclick="toggleActive()" disabled>Inactive</button>
+  <div id="welcome" style="margin-top:10px;"></div>
+  <button id="toggle-btn" disabled>Inactive</button>
   <div id="active-count" style="margin-top:10px;">Other active users: 0</div>
-
-  <script>
-    const socket = io();
-    const passwordInput = document.getElementById("password");
-    const loginResult = document.getElementById("login-result");
-    const toggleBtn = document.getElementById("toggle-btn");
-    const loginForm = document.getElementById("login-form");
-    const activeCount = document.getElementById("active-count");
-
-    const pathParts = window.location.pathname.split("/");
-    const id = pathParts[pathParts.length - 1];
-
-    function login() {
-      socket.emit("login-user", { id, password: passwordInput.value });
-    }
-
-    socket.on("login-result", data => {
-      if (data.success) {
-        loginResult.innerText = `Welcome ${data.name}`;
-        loginForm.style.display = "none";
-        toggleBtn.disabled = false;
-        toggleBtn.style.backgroundColor = "red";
-        toggleBtn.innerText = "Inactive";
-        passwordInput.value = "";
-      } else loginResult.innerText = `Login failed: ${data.msg}`;
-    });
-
-    function toggleActive() {
-      const newState = toggleBtn.innerText === "Inactive";
-      socket.emit("toggle-status", { id, state: newState });
-      toggleBtn.style.backgroundColor = newState ? "green" : "red";
-      toggleBtn.innerText = newState ? "Active" : "Inactive";
-    }
-
-    socket.on("status-update", data => {
-      let count = 0;
-      for (const key in data) if (data[key].active) count++;
-      if (data[id]?.active) count--;
-      activeCount.innerText = `Other active users: ${count}`;
-
-      if (data[id]) {
-        const state = data[id].active;
-        toggleBtn.style.backgroundColor = state ? "green" : "red";
-        toggleBtn.innerText = state ? "Active" : "Inactive";
-      }
-    });
-
-    setInterval(() => { socket.emit("heartbeat", id); }, 5000);
-  </script>
+  <input type="hidden" id="slug">
+</div>
 </body>
 </html>
