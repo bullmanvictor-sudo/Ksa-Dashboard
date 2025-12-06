@@ -1,6 +1,6 @@
 const socket = io();
 
-// Map slugs to names
+// User slug → name mapping
 const usersNames = {
   "384927": "Selmy",
   "590213": "Basmalah",
@@ -9,7 +9,7 @@ const usersNames = {
   "246801": "Rana",
   "975310": "Yara",
   "130579": "Youssef",
-  "483020": "Newbie"
+  "483020": "newbie"
 };
 
 // Format seconds as hh:mm:ss
@@ -20,28 +20,42 @@ function formatTime(seconds) {
   return `${h}h ${m}m ${s}s`;
 }
 
-// Dashboard rendering
+// =================== DASHBOARD ===================
 socket.on("status-update", data => {
-  const container = document.getElementById("dashboard-users");
-  if (!container) return;
-  container.innerHTML = "";
+  // Dashboard rendering
+  const dashboardContainer = document.getElementById("dashboard-users");
+  if (dashboardContainer) {
+    dashboardContainer.innerHTML = "";
+    for (const slug in data) {
+      const user = data[slug];
+      const name = usersNames[slug] || slug;
+      const status = user.active ? "Active" : "Inactive";
+      const color = user.active ? "green" : "red";
+      const lastActive = user.lastActive ? new Date(user.lastActive).toLocaleTimeString() : "Never";
+      const totalTime = formatTime(user.activeSeconds);
+      const sessions = user.activeSessions || 0;
 
-  for (const slug in data) {
-    const user = data[slug];
-    const status = user.active ? "Active" : "Inactive";
-    const color = user.active ? "green" : "red";
-    const last = user.lastActive ? new Date(user.lastActive).toLocaleTimeString() : "Never";
-    const totalTime = formatTime(user.activeSeconds);
-    const sessions = user.activeSessions || 0;
-    const name = usersNames[slug] || slug;
+      dashboardContainer.innerHTML += `<div style="color:${color}; margin-bottom:5px;">
+        ${name} (${status}) - Last Active: ${lastActive} - Total Time: ${totalTime} - Active Sessions: ${sessions}
+      </div>`;
+    }
+  }
 
-    container.innerHTML += `<div style="color:${color}">
-      ${name} (${status}) - Last Active: ${last} - Total Time Today: ${totalTime} - Active Sessions: ${sessions}
-    </div>`;
+  // =================== USER PAGE ACTIVE USERS ===================
+  const slugInput = document.getElementById("slug");
+  const activeCountContainer = document.getElementById("active-count");
+  if (slugInput && activeCountContainer) {
+    const mySlug = slugInput.value;
+    let activeUsers = 0;
+    for (const slug in data) {
+      if (data[slug].active) activeUsers++;
+    }
+    if (mySlug && data[mySlug]?.active) activeUsers--; // exclude self
+    activeCountContainer.innerText = `Other active users: ${activeUsers}`;
   }
 });
 
-// User page functions
+// =================== USER PAGE LOGIN ===================
 function login() {
   const slug = document.getElementById("slug").value;
   const password = document.getElementById("password").value;
@@ -50,26 +64,44 @@ function login() {
 
 socket.on("login-result", data => {
   const loginResult = document.getElementById("login-result");
+  const loginForm = document.getElementById("login-form");
   const toggleBtn = document.getElementById("toggle-btn");
-  const activeBtn = document.getElementById("active-btn");
-  if (!loginResult || !toggleBtn || !activeBtn) return;
+
+  if (!loginResult || !loginForm || !toggleBtn) return;
 
   if (data.success) {
     loginResult.innerText = `Welcome ${data.name}`;
-    toggleBtn.disabled = false;
-    activeBtn.disabled = false;
+    loginForm.style.display = "none";        // Hide login form
+    toggleBtn.disabled = false;              // Enable toggle button
+    toggleBtn.style.backgroundColor = "red"; // Start as inactive
+    toggleBtn.innerText = "Inactive";
   } else {
     loginResult.innerText = `Login failed: ${data.msg}`;
   }
 });
 
-function toggleActive(state) {
-  const slug = document.getElementById("slug").value;
-  socket.emit("toggle-status", { slug, state });
+// =================== USER PAGE TOGGLE ===================
+function toggleActive() {
+  const slugInput = document.getElementById("slug");
+  const toggleBtn = document.getElementById("toggle-btn");
+  if (!slugInput || !toggleBtn) return;
+
+  const newState = toggleBtn.innerText === "Inactive";
+  socket.emit("toggle-status", { slug: slugInput.value, state: newState });
+
+  if (newState) {
+    toggleBtn.innerText = "Active";
+    toggleBtn.style.backgroundColor = "green";
+  } else {
+    toggleBtn.innerText = "Inactive";
+    toggleBtn.style.backgroundColor = "red";
+  }
 }
 
-// Heartbeat
+// =================== HEARTBEAT ===================
 setInterval(() => {
   const slugInput = document.getElementById("slug");
-  if (slugInput) socket.emit("heartbeat", slugInput.value);
+  if (slugInput && slugInput.value) {
+    socket.emit("heartbeat", slugInput.value);
+  }
 }, 1000);
