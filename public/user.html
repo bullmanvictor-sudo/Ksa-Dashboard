@@ -7,36 +7,15 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="/client.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 400px;
-      margin: 30px auto;
-      text-align: center;
-    }
-    input, button {
-      padding: 8px 12px;
-      margin: 5px 0;
-      width: 80%;
-      font-size: 16px;
-    }
-    #toggle-btn {
-      color: white;
-      border: none;
-      cursor: pointer;
-      width: 50%;
-      font-size: 16px;
-      margin-top: 15px;
-    }
-    #active-count {
-      margin-top: 15px;
-      font-weight: bold;
-    }
+    body { font-family: Arial; max-width:400px; margin:30px auto; text-align:center; }
+    input, button { width: 80%; padding:8px; margin:5px 0; font-size:16px; }
+    #toggle-btn { padding:10px 20px; border:none; cursor:pointer; margin-top:10px; color:white; }
+    #active-count { margin-top:10px; font-weight:bold; }
   </style>
 </head>
 <body>
   <h1>User Page</h1>
 
-  <!-- Login Form -->
   <div id="login-form">
     <input type="text" id="slug" placeholder="Enter your name">
     <input type="password" id="password" placeholder="Enter password">
@@ -44,12 +23,7 @@
   </div>
 
   <div id="login-result"></div>
-
-  <!-- Toggle Active / Inactive -->
   <button id="toggle-btn" onclick="toggleActive()" disabled>Inactive</button>
-
-  <!-- Other active users -->
   <div id="active-count">Other active users: 0</div>
-
 </body>
 </html>
