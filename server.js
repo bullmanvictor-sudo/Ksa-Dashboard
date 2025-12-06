@@ -41,14 +41,16 @@ app.get("/dashboard", (req, res) => res.sendFile(process.cwd() + "/public/dashbo
 io.on("connection", socket => {
   socket.emit("status-update", statusData);
 
-  // LOGIN
+  // LOGIN (password only, ID from URL)
   socket.on("login-user", ({ id, password }) => {
     if (!users[id]) return socket.emit("login-result", { success: false, msg: "Invalid user ID" });
     if (users[id].password !== password) return socket.emit("login-result", { success: false, msg: "Wrong password" });
 
     statusData[id].dailyLogins++;
+    if (!statusData[id].lastActive) statusData[id].lastActive = Date.now();
     statusData[id].lastUpdate = Date.now();
-    socket.emit("login-result", { success: true, name: users[id].name });
+
+    socket.emit("login-result", { success: true, name: users[id].name, active: statusData[id].active });
     io.emit("status-update", statusData);
   });
 
@@ -65,14 +67,10 @@ io.on("connection", socket => {
   socket.on("heartbeat", id => {
     if (!statusData[id]) return;
     if (statusData[id].active) statusData[id].activeSeconds += 5;
+    io.emit("status-update", statusData);
   });
 });
 
 // ---------------- START SERVER ----------------
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, "0.0.0.0", () => console.log("Server running on port", PORT));
-const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log("Server running on port", PORT);
-});
-
