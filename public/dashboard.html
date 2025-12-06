@@ -1,33 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Presence Dashboard</title>
-  <link rel="stylesheet" href="/style.css">
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/client.js"></script>
-  <style>
-    body { font-family: Arial; max-width:900px; margin:30px auto; text-align:center; }
-    table { width:100%; border-collapse: collapse; margin-top:20px; }
-    th, td { border:1px solid #ccc; padding:10px; }
-    th { background:#f4f4f4; }
-    .active { color:white; background:green; padding:5px 10px; border-radius:4px; }
-    .inactive { color:white; background:red; padding:5px 10px; border-radius:4px; }
-  </style>
+<meta charset="UTF-8">
+<title>Presence Dashboard</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/socket.io/socket.io.js"></script>
+<script src="/client.js"></script>
+<style>
+body { font-family: Arial; max-width:900px; margin:30px auto; text-align:center; }
+table { width:100%; border-collapse: collapse; margin-top:20px; }
+th, td { border:1px solid #ccc; padding:10px; }
+th { background:#f4f4f4; }
+.active { color:white; background:green; padding:5px 10px; border-radius:4px; }
+.inactive { color:white; background:red; padding:5px 10px; border-radius:4px; }
+</style>
 </head>
 <body>
-  <h1>Presence Dashboard</h1>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Status</th>
-        <th>Last Active</th>
-        <th>Total Active Time</th>
-        <th>Daily Logins</th>
-      </tr>
-    </thead>
-    <tbody id="dashboard-body"></tbody>
-  </table>
+<h1>Presence Dashboard</h1>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Status</th>
+<th>Last Active</th>
+<th>Total Active Time</th>
+<th>Daily Logins</th>
+</tr>
+</thead>
+<tbody id="dashboard-body"></tbody>
+</table>
 </body>
 </html>
