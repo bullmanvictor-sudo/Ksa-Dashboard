@@ -1,17 +1,21 @@
 app = "ksa-dashboard"
 
+# Build section using lightweight buildpacks
 [build]
-  builder = "heroku/buildpacks:20" # lightweight build
+  builder = "heroku/buildpacks:20"
 
+# HTTP service configuration
 [[services]]
   internal_port = 3000
   protocol = "tcp"
 
   [[services.ports]]
     port = 80
+
   [[services.ports]]
     port = 443
 
+# Machines configuration
 [machines]
   size = "shared-1x"   # smallest free-tier size (1 CPU, 1 GB RAM)
   count = 1
