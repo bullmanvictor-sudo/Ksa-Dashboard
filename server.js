@@ -83,3 +83,7 @@ io.on("connection", socket => {
     if (statusData[slug].active) {
       statusData[slug].activeSeconds += 1;
       statusData[slug].las
+const PORT = process.env.PORT || 3000;
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log("Server running on port", PORT);
+});
