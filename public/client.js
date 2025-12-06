@@ -1,6 +1,5 @@
 const socket = io();
 
-// Format seconds to hh:mm:ss
 function formatTime(seconds) {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -24,7 +23,7 @@ socket.on("status-update", data => {
       statusTd.innerHTML = user.active ? '<span class="active">Active</span>' : '<span class="inactive">Inactive</span>';
 
       const lastActiveTd = document.createElement("td");
-      lastActiveTd.innerText = user.active ? new Date(user.lastActive).toLocaleTimeString() : lastActiveTd.innerText || "-";
+      lastActiveTd.innerText = user.lastActive ? new Date(user.lastActive).toLocaleTimeString() : "-";
 
       const totalTimeTd = document.createElement("td");
       totalTimeTd.innerText = formatTime(user.activeSeconds);
@@ -32,11 +31,7 @@ socket.on("status-update", data => {
       const dailyLoginsTd = document.createElement("td");
       dailyLoginsTd.innerText = user.dailyLogins;
 
-      tr.appendChild(nameTd);
-      tr.appendChild(statusTd);
-      tr.appendChild(lastActiveTd);
-      tr.appendChild(totalTimeTd);
-      tr.appendChild(dailyLoginsTd);
+      tr.append(nameTd, statusTd, lastActiveTd, totalTimeTd, dailyLoginsTd);
       dashboardBody.appendChild(tr);
     }
   }
