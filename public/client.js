@@ -11,42 +11,43 @@ function formatTime(seconds) {
 // ================= DASHBOARD =================
 const dashboardBody = document.getElementById("dashboard-body");
 socket.on("status-update", data => {
-  if (!dashboardBody) return;
-  dashboardBody.innerHTML = "";
-  for (const username in data) {
-    const user = data[username];
-    const tr = document.createElement("tr");
+  if (dashboardBody) {
+    dashboardBody.innerHTML = "";
+    for (const username in data) {
+      const user = data[username];
+      const tr = document.createElement("tr");
 
-    const nameTd = document.createElement("td");
-    nameTd.innerText = username;
+      const nameTd = document.createElement("td");
+      nameTd.innerText = username;
 
-    const statusTd = document.createElement("td");
-    statusTd.innerHTML = user.active ? '<span class="active">Active</span>' : '<span class="inactive">Inactive</span>';
+      const statusTd = document.createElement("td");
+      statusTd.innerHTML = user.active ? '<span class="active">Active</span>' : '<span class="inactive">Inactive</span>';
 
-    const lastActiveTd = document.createElement("td");
-    lastActiveTd.innerText = user.active ? new Date(user.lastActive).toLocaleTimeString() : lastActiveTd.innerText || "-";
+      const lastActiveTd = document.createElement("td");
+      lastActiveTd.innerText = user.active ? new Date(user.lastActive).toLocaleTimeString() : lastActiveTd.innerText || "-";
 
-    const totalTimeTd = document.createElement("td");
-    totalTimeTd.innerText = formatTime(user.activeSeconds);
+      const totalTimeTd = document.createElement("td");
+      totalTimeTd.innerText = formatTime(user.activeSeconds);
 
-    const dailyLoginsTd = document.createElement("td");
-    dailyLoginsTd.innerText = user.dailyLogins;
+      const dailyLoginsTd = document.createElement("td");
+      dailyLoginsTd.innerText = user.dailyLogins;
 
-    tr.appendChild(nameTd);
-    tr.appendChild(statusTd);
-    tr.appendChild(lastActiveTd);
-    tr.appendChild(totalTimeTd);
-    tr.appendChild(dailyLoginsTd);
-    dashboardBody.appendChild(tr);
+      tr.appendChild(nameTd);
+      tr.appendChild(statusTd);
+      tr.appendChild(lastActiveTd);
+      tr.appendChild(totalTimeTd);
+      tr.appendChild(dailyLoginsTd);
+      dashboardBody.appendChild(tr);
+    }
   }
 
-  // Update user page other active count
-  const slugInput = document.getElementById("username");
+  // Update other active count on user page
+  const usernameInput = document.getElementById("username");
   const activeCount = document.getElementById("active-count");
-  if (slugInput && activeCount) {
+  if (usernameInput && activeCount) {
     let count = 0;
-    for (const username in data) if (data[username].active) count++;
-    if (slugInput.value && data[slugInput.value]?.active) count--;
+    for (const u in data) if (data[u].active) count++;
+    if (usernameInput.value && data[usernameInput.value]?.active) count--;
     activeCount.innerText = `Other active users: ${count}`;
   }
 });
