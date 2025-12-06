@@ -1,19 +1,7 @@
-body { font-family: Arial, sans-serif; margin:20px; }
-input, button { font-size: 16px; }
-table { border-collapse: collapse; width: 100%; margin-top:20px; }
-th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-th { background: #2F4F4F; color: white; }
-tr:hover { background: #f5f5f5; }
-.active { background: green; color: white; border-radius: 4px; padding: 4px 8px; }
-.inactive { background: red; color: white; border-radius: 4px; padding: 4px 8px; }
-.status-badge { padding: 5px 10px; border-radius: 5px; color: white; font-weight:bold; }
-.status-active { background-color: #28a745; }
-.status-inactive { background-color: #dc3545; }
-.time-bar-container { background: #eee; border-radius: 5px; height: 20px; width: 100%; }
-.time-bar { height: 100%; border-radius: 5px; background: #007bff; text-align: right; color: white; padding-right: 5px; font-size: 12px; line-height: 20px; }
 body { font-family: Arial, sans-serif; margin: 20px; }
 h1 { color: #333; }
 table { border-collapse: collapse; width: 100%; }
 th { background: #444; color: #fff; }
 td, th { padding: 8px; text-align: left; }
-button { padding: 10px 20px; cursor: pointer; }
+button { padding: 10px 20px; cursor: pointer; border: none; }
+#toggle-btn { border-radius: 5px; }
