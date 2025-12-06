@@ -12,3 +12,6 @@ app = "ksa-dashboard"
 
   [[services.ports]]
     port = 443
+
+[machines]
+  size = "shared-cpu-1x"  # smallest allowed free/shared size
