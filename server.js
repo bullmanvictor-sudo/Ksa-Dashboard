@@ -1,8 +1,6 @@
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import fs from "fs";
-import path from "path";
 
 const app = express();
 const httpServer = createServer(app);
@@ -10,81 +8,68 @@ const io = new Server(httpServer);
 
 app.use(express.static("public"));
 
-const DATA_FILE = path.join(process.cwd(), "data.json");
-
-// ================= USERS =================
+// ---------------- USERS CONFIG ----------------
 const users = {
-  "selmy": { password: "P$8rVq2xL!a" },
-  "basmalah": { password: "u9F&3bK#tQ1" },
-  "eman": { password: "Zp7@vR5mS2y" },
-  "maya": { password: "xE4$k9N!pT8" },
-  "rana": { password: "M#6tQ2zY7uV" },
-  "yara": { password: "s8W&1pL#cF4" },
-  "youssef": { password: "B2!rN7qH$k9" },
-  "newbie": { password: "g6Z#x3T&pL0" }
+  selmy: { name: "Selmy", password: "P$8rVq2xL!a" },
+  basmalah: { name: "Basmalah", password: "u9F&3bK#tQ1" },
+  eman: { name: "Eman", password: "Zp7@vR5mS2y" },
+  maya: { name: "Maya", password: "xE4$k9N!pT8" },
+  rana: { name: "Rana", password: "M#6tQ2zY7uV" },
+  yara: { name: "Yara", password: "s8W&1pL#cF4" },
+  youssef: { name: "Youssef", password: "B2!rN7qH$k9" },
+  newbie: { name: "newbie", password: "g6Z#x3T&pL0" }
 };
 
-// ================= LOAD / SAVE =================
-let statusData = {};
-if (fs.existsSync(DATA_FILE)) {
-  try {
-    statusData = JSON.parse(fs.readFileSync(DATA_FILE));
-  } catch (err) {
-    console.error("Failed to parse data.json");
-  }
-}
-Object.keys(users).forEach(username => {
-  if (!statusData[username]) {
-    statusData[username] = { active: false, lastActive: null, activeSeconds: 0, dailyLogins: 0 };
-  }
+// ---------------- IN-MEMORY STATUS ----------------
+const statusData = {};
+Object.keys(users).forEach(slug => {
+  statusData[slug] = {
+    active: false,
+    lastActive: null,
+    lastUpdate: null,
+    activeSeconds: 0,
+    dailyLogins: 0
+  };
 });
 
-function saveData() {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(statusData, null, 2));
-}
-
-// ================= ROUTES =================
-app.get("/", (req, res) => res.sendFile(process.cwd() + "/public/dashboard.html"));
-app.get("/dashboard", (req, res) => res.sendFile(process.cwd() + "/public/dashboard.html"));
-app.get("/u/:username", (req, res) => {
-  const username = req.params.username;
-  if (!users[username]) return res.status(404).send("User not found");
+// ---------------- ROUTES ----------------
+app.get("/u/:slug", (req, res) => {
   res.sendFile(process.cwd() + "/public/user.html");
 });
 
-// ================= SOCKET.IO =================
+app.get("/dashboard", (req, res) => {
+  res.sendFile(process.cwd() + "/public/dashboard.html");
+});
+
+// ---------------- SOCKET.IO ----------------
 io.on("connection", socket => {
+  // send initial status
   socket.emit("status-update", statusData);
 
-  socket.on("login-user", ({ username, password }) => {
-    if (!users[username]) return socket.emit("login-result", { success: false, msg: "Invalid username" });
-    if (users[username].password !== password) return socket.emit("login-result", { success: false, msg: "Wrong password" });
+  socket.on("login-user", ({ slug, password }) => {
+    if (!users[slug]) return socket.emit("login-result", { success: false, msg: "Invalid user" });
+    if (users[slug].password !== password) return socket.emit("login-result", { success: false, msg: "Wrong password" });
 
-    statusData[username].dailyLogins++;
-    saveData();
-    socket.emit("login-result", { success: true, username, status: statusData[username] });
+    statusData[slug].dailyLogins++;
+    statusData[slug].lastUpdate = Date.now();
+    socket.emit("login-result", { success: true, name: users[slug].name });
     io.emit("status-update", statusData);
   });
 
-  socket.on("toggle-status", ({ username, state }) => {
-    if (!statusData[username]) return;
-    statusData[username].active = state;
-    if (state) statusData[username].lastActive = Date.now();
-    saveData();
+  socket.on("toggle-status", ({ slug, state }) => {
+    if (!statusData[slug]) return;
+    statusData[slug].active = state;
+    statusData[slug].lastUpdate = Date.now();
+    if (state) statusData[slug].lastActive = Date.now();
     io.emit("status-update", statusData);
   });
 
-  socket.on("heartbeat", username => {
-    if (!statusData[username]) return;
-    if (statusData[username].active) {
-      statusData[username].activeSeconds++;
-      statusData[username].lastActive = Date.now();
-      saveData();
-      io.emit("status-update", statusData);
-    }
+  socket.on("heartbeat", slug => {
+    if (!statusData[slug]) return;
+    if (statusData[slug].active) statusData[slug].activeSeconds++;
   });
 });
 
-// ================= SERVER =================
+// ---------------- START SERVER ----------------
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, "0.0.0.0", () => console.log("Server running on port", PORT));
